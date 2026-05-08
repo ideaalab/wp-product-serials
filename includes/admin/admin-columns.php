@@ -32,6 +32,7 @@ add_filter('manage_ial_product_posts_columns', function ($columns) {
     $new['title'] = 'Product';
     $new['frontend_enable'] = 'Frontend?';
     $new['acym_list'] = __('AcyMailing List', 'ial-reg');
+    $new['assign_roles'] = __('Assigned Roles', 'ial-reg');
     $new['productions_count'] = 'Productions';
     $new['serials_count'] = 'Total Serials';
     $new['notes'] = __('Notes', 'ial-reg');
@@ -87,6 +88,27 @@ add_action('manage_ial_product_posts_custom_column', function ($column, $post_id
             } else {
                 echo '<span style="color:#ccc;">—</span>';
             }
+            break;
+
+        case 'assign_roles':
+            $roles = get_post_meta($post_id, 'assign_roles', true);
+            if (!is_array($roles) || empty($roles)) {
+                echo '<span style="color:#ccc;">—</span>';
+                break;
+            }
+            $all_roles = wp_roles()->get_names();
+            $chips = array();
+            foreach ($roles as $role_key) {
+                if (!isset($all_roles[$role_key])) {
+                    continue;
+                }
+                $chips[] = sprintf(
+                    '<span class="ial-role-chip" title="%1$s" style="display:inline-block; background:#f0f0f1; border:1px solid #c3c4c7; border-radius:10px; padding:1px 8px; margin:1px 2px; font-size:11px; line-height:18px;">%2$s</span>',
+                    esc_attr($role_key),
+                    esc_html(translate_user_role($all_roles[$role_key]))
+                );
+            }
+            echo $chips ? implode('', $chips) : '<span style="color:#ccc;">—</span>';
             break;
 
         case 'productions_count':
@@ -357,6 +379,15 @@ add_action('parse_query', function ($query) {
             $query->set('meta_query', $mq);
     }
 });
+
+
+// Hide the default "All / Mine / Published / ..." views above the list tables
+// for the plugin CPTs. They aren't useful here (products are organizational
+// data, not user-authored content), and "Mine" can also trip security plugins
+// that block ?author=N user-enumeration patterns.
+add_filter('views_edit-ial_product', '__return_empty_array');
+add_filter('views_edit-ial_production', '__return_empty_array');
+add_filter('views_edit-ial_serial', '__return_empty_array');
 
 
 add_filter('manage_ial_email_campaign_posts_columns', function ($columns) {

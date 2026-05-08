@@ -1,0 +1,127 @@
+.ial-tokenizer {
+    max-width: 500px;
+    position: relative;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.ial-tokenizer-control {
+    border: 1px solid #8c8f94;
+    background: #fff;
+    border-radius: 4px;
+    padding: 4px;
+    min-height: 32px;
+    transition: border-color .1s ease, box-shadow .1s ease;
+}
+
+.ial-tokenizer-control.is-open {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+.ial-tokenizer-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    cursor: text;
+}
+
+.ial-tokenizer-chip {
+    display: inline-flex;
+    align-items: center;
+    background: #2271b1;
+    color: #fff;
+    border-radius: 12px;
+    padding: 1px 4px 1px 10px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.ial-tokenizer-chip-label {
+    margin-right: 2px;
+}
+
+.ial-tokenizer-chip-remove {
+    background: transparent;
+    border: 0;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 4px;
+    margin: 0;
+    border-radius: 50%;
+}
+
+.ial-tokenizer-chip-remove:hover,
+.ial-tokenizer-chip-remove:focus {
+    background: rgba(255, 255, 255, 0.25);
+    outline: 0;
+}
+
+.ial-tokenizer-search {
+    flex: 1 1 140px;
+    min-width: 140px;
+    border: 0 !important;
+    outline: 0;
+    padding: 4px;
+    background: transparent;
+    box-shadow: none !important;
+    margin: 0;
+}
+
+.ial-tokenizer-search:focus {
+    box-shadow: none !important;
+    border: 0 !important;
+    outline: 0;
+}
+
+.ial-tokenizer-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    margin-top: 2px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.ial-tokenizer-options {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.ial-tokenizer-option {
+    padding: 6px 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.ial-tokenizer-option:hover {
+    background: #f0f0f1;
+}
+
+.ial-tokenizer-option code {
+    background: #f0f0f1;
+    color: #50575e;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+
+.ial-tokenizer-option-empty {
+    padding: 8px 10px;
+    color: #50575e;
+    font-style: italic;
+}

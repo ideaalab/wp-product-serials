@@ -140,23 +140,28 @@ function ial_render_product_metabox($post)
         </tr>
 
         <tr>
-            <th><label><?php esc_html_e('Roles to assign on registration', 'ial-reg'); ?></label></th>
+            <th><label for="ial_assign_roles"><?php esc_html_e('Roles to assign on registration', 'ial-reg'); ?></label></th>
             <td>
                 <?php
                 $available_roles = wp_roles()->get_names();
                 if (empty($available_roles)) {
                     echo '<p class="description">' . esc_html__('No roles available.', 'ial-reg') . '</p>';
                 } else {
-                    echo '<fieldset class="ial-assign-roles" style="max-height:180px; overflow-y:auto; border:1px solid #ddd; padding:8px; background:#fafafa; max-width:400px;">';
-                    foreach ($available_roles as $role_key => $role_label) {
-                        printf(
-                            '<label style="display:block; margin-bottom:4px;"><input type="checkbox" name="assign_roles[]" value="%1$s" %2$s> %3$s <code>%1$s</code></label>',
-                            esc_attr($role_key),
-                            checked(in_array($role_key, $assign_roles, true), true, false),
-                            esc_html(translate_user_role($role_label))
-                        );
-                    }
-                    echo '</fieldset>';
+                    ?>
+                    <fieldset class="ial-tokenizer"
+                        data-placeholder="<?php esc_attr_e('Click to add a role…', 'ial-reg'); ?>"
+                        data-empty-all="<?php esc_attr_e('All roles already assigned', 'ial-reg'); ?>"
+                        data-empty-match="<?php esc_attr_e('No matches', 'ial-reg'); ?>">
+                        <select id="ial_assign_roles" name="assign_roles[]" multiple size="6" class="large-text">
+                            <?php foreach ($available_roles as $role_key => $role_label): ?>
+                                <option value="<?php echo esc_attr($role_key); ?>"
+                                    <?php selected(in_array($role_key, $assign_roles, true)); ?>>
+                                    <?php echo esc_html(translate_user_role($role_label)); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </fieldset>
+                    <?php
                 }
                 ?>
                 <p class="description">

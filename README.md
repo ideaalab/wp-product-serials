@@ -5,7 +5,7 @@ Manages custom post types (Products, Productions, Serials, Campaigns), a fronten
 | | |
 |---|---|
 | **Slug** | `wp-product-serials` |
-| **Version** | 3.3.0 |
+| **Version** | 3.4.0 |
 | **Author** | IDEAA Lab \| Michael Di Desidero |
 | **Requires WP** | 5.8+ |
 | **Requires PHP** | 7.4+ |
@@ -73,6 +73,12 @@ Updates are delivered straight from this GitHub repository through the bundled [
 4. The `Release Plugin ZIP` workflow builds `wp-product-serials-vX.Y.Z.zip` and attaches it to the GitHub Release.
 
 ## Changelog
+
+### 3.4.0
+- Shorter, more focused plugin description in the WP plugins list.
+- Removed the default `All / Mine / Published` views above the list tables for Products, Productions and Serials. They were unhelpful here and "Mine" could trigger 403s from security plugins blocking `?author=` user enumeration.
+- New: **Assigned Roles** column in the Products list table, showing the configured roles per product as chips.
+- Improved role selector in the Product metabox: chip-style multi-select with autocomplete dropdown, replacing the checkbox list. Vanilla JS, no extra dependencies.
 
 ### 3.3.0
 - New: per-product role assignment. Configure one or more WordPress roles in the **Product** metabox; each role is added (additively) to the user when they successfully register a serial of that product.

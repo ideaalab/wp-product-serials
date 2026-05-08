@@ -52,6 +52,19 @@ function ial_enqueue_admin_media_scripts()
             '1.0.0',
             true
         );
+        wp_enqueue_script(
+            'ial-admin-role-tokenizer',
+            plugin_dir_url(__FILE__) . '../../assets/js/admin-role-tokenizer.js',
+            array(),
+            IAL_REG_VERSION,
+            true
+        );
+        wp_enqueue_style(
+            'ial-admin-role-tokenizer',
+            plugin_dir_url(__FILE__) . '../../assets/css/admin-role-tokenizer.css',
+            array(),
+            IAL_REG_VERSION
+        );
     }
 
     // Validation script for all ial_ CPTs
