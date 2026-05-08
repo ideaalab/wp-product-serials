@@ -67,6 +67,10 @@ function ial_render_product_metabox($post)
     $enable = get_post_meta($post->ID, 'frontend_enable', true);
     $mailing_list = get_post_meta($post->ID, 'acymailing_list_id', true);
     $image_id = get_post_meta($post->ID, 'product_image', true);
+    $assign_roles = get_post_meta($post->ID, 'assign_roles', true);
+    if (!is_array($assign_roles)) {
+        $assign_roles = array();
+    }
 
     // Default checked if new
     if ($post->post_status === 'auto-draft' && get_post_meta($post->ID, 'frontend_enable', true) === '') {
@@ -132,6 +136,36 @@ function ial_render_product_metabox($post)
                 </select>
                 <p class="description">
                     <?php esc_html_e('Select the list to subscribe users to upon registration.', 'ial-reg'); ?></p>
+            </td>
+        </tr>
+
+        <tr>
+            <th><label><?php esc_html_e('Roles to assign on registration', 'ial-reg'); ?></label></th>
+            <td>
+                <?php
+                $available_roles = wp_roles()->get_names();
+                if (empty($available_roles)) {
+                    echo '<p class="description">' . esc_html__('No roles available.', 'ial-reg') . '</p>';
+                } else {
+                    echo '<fieldset class="ial-assign-roles" style="max-height:180px; overflow-y:auto; border:1px solid #ddd; padding:8px; background:#fafafa; max-width:400px;">';
+                    foreach ($available_roles as $role_key => $role_label) {
+                        printf(
+                            '<label style="display:block; margin-bottom:4px;"><input type="checkbox" name="assign_roles[]" value="%1$s" %2$s> %3$s <code>%1$s</code></label>',
+                            esc_attr($role_key),
+                            checked(in_array($role_key, $assign_roles, true), true, false),
+                            esc_html(translate_user_role($role_label))
+                        );
+                    }
+                    echo '</fieldset>';
+                }
+                ?>
+                <p class="description">
+                    <?php esc_html_e('When a user registers a serial of this product, the selected role(s) will be added to their account (additive — existing roles are kept).', 'ial-reg'); ?>
+                </p>
+                <p class="description" style="color:#b32d2e;">
+                    <strong><?php esc_html_e('Note:', 'ial-reg'); ?></strong>
+                    <?php esc_html_e('Already-registered users will not receive these roles automatically when this configuration changes. Only future registrations are affected.', 'ial-reg'); ?>
+                </p>
             </td>
         </tr>
 
@@ -353,6 +387,14 @@ function ial_save_plugin_meta_data($post_id)
             update_post_meta($post_id, 'acymailing_list_id', sanitize_text_field($_POST['acymailing_list_id']));
         if (isset($_POST['product_image']))
             update_post_meta($post_id, 'product_image', sanitize_text_field($_POST['product_image']));
+
+        // Roles to assign on registration. Filter against currently registered roles.
+        $submitted_roles = isset($_POST['assign_roles']) && is_array($_POST['assign_roles'])
+            ? array_map('sanitize_key', $_POST['assign_roles'])
+            : array();
+        $valid_role_keys = array_keys(wp_roles()->get_names());
+        $clean_roles = array_values(array_unique(array_intersect($submitted_roles, $valid_role_keys)));
+        update_post_meta($post_id, 'assign_roles', $clean_roles);
     }
 
     // 2. Save Production

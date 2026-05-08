@@ -5,7 +5,7 @@ Manages custom post types (Products, Productions, Serials, Campaigns), a fronten
 | | |
 |---|---|
 | **Slug** | `wp-product-serials` |
-| **Version** | 3.2.1 |
+| **Version** | 3.3.0 |
 | **Author** | IDEAA Lab \| Michael Di Desidero |
 | **Requires WP** | 5.8+ |
 | **Requires PHP** | 7.4+ |
@@ -73,6 +73,11 @@ Updates are delivered straight from this GitHub repository through the bundled [
 4. The `Release Plugin ZIP` workflow builds `wp-product-serials-vX.Y.Z.zip` and attaches it to the GitHub Release.
 
 ## Changelog
+
+### 3.3.0
+- New: per-product role assignment. Configure one or more WordPress roles in the **Product** metabox; each role is added (additively) to the user when they successfully register a serial of that product.
+- New extension hook `ial_user_product_registered` (`$user_id`, `$ial_product_id`) fires after roles are assigned, for third-party integrations (e.g. discount rules based on user role).
+- Note: existing registrations are not retroactively granted roles when the configuration changes — only future registrations are affected.
 
 ### 3.2.1
 - Rebranded plugin and slug to **WP Product Serials** (`wp-product-serials`).
