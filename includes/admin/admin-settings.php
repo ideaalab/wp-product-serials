@@ -65,6 +65,24 @@ function ial_enqueue_admin_media_scripts()
             array(),
             IAL_REG_VERSION
         );
+        wp_enqueue_script(
+            'ial-admin-product-tools',
+            plugin_dir_url(__FILE__) . '../../assets/js/admin-product-tools.js',
+            array(),
+            IAL_REG_VERSION,
+            true
+        );
+    }
+
+    // Quick Edit / Bulk Edit JS on the products list.
+    if ($screen && $screen->post_type === 'ial_product' && $screen->base === 'edit') {
+        wp_enqueue_script(
+            'ial-admin-inline-edit',
+            plugin_dir_url(__FILE__) . '../../assets/js/admin-inline-edit.js',
+            array('jquery', 'inline-edit-post'),
+            IAL_REG_VERSION,
+            true
+        );
     }
 
     // Validation script for all ial_ CPTs

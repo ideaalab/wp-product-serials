@@ -5,7 +5,7 @@ Manages custom post types (Products, Productions, Serials, Campaigns), a fronten
 | | |
 |---|---|
 | **Slug** | `wp-product-serials` |
-| **Version** | 3.4.0 |
+| **Version** | 3.5.0 |
 | **Author** | IDEAA Lab \| Michael Di Desidero |
 | **Requires WP** | 5.8+ |
 | **Requires PHP** | 7.4+ |
@@ -73,6 +73,12 @@ Updates are delivered straight from this GitHub repository through the bundled [
 4. The `Release Plugin ZIP` workflow builds `wp-product-serials-vX.Y.Z.zip` and attaches it to the GitHub Release.
 
 ## Changelog
+
+### 3.5.0
+- Admin menu renamed from **Registrations** to **Product Serials**. The internal slug (`edit.php?post_type=ial_product`) is unchanged, so saved bookmarks keep working. Individual item labels (Product/Products) are unchanged.
+- New: **retroactive role application** on the Product edit screen. Shows how many serials of the product are registered vs. unregistered, and a one-click button applies the currently saved roles to every user who registered a serial — additively, idempotent. Useful when a product has existing registrations from before role assignment was configured. AJAX, nonce + cap-checked per product.
+- New: **Quick Edit** on the Products list for `frontend_enable`, `acymailing_list_id`, and `assign_roles`. Multi-select for roles uses a native control (compact for the inline UI). Image and notes remain edit-only.
+- New: **Bulk Edit** on the Products list for `frontend_enable` and `acymailing_list_id`, both with a "No change" sentinel so untouched fields are preserved.
 
 ### 3.4.0
 - Shorter, more focused plugin description in the WP plugins list.

@@ -12,7 +12,7 @@ function ial_register_cpts()
     $product_labels = array(
         'name' => _x('Products', 'post type general name', 'ial-reg'),
         'singular_name' => _x('Product', 'post type singular name', 'ial-reg'),
-        'menu_name' => _x('Registrations', 'admin menu', 'ial-reg'),
+        'menu_name' => _x('Product Serials', 'admin menu', 'ial-reg'),
         'all_items' => __('All Products', 'ial-reg'),
         'add_new' => _x('Add New', 'product', 'ial-reg'),
         'add_new_item' => __('Add New Product', 'ial-reg'),

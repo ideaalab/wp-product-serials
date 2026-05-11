@@ -169,7 +169,57 @@ function ial_render_product_metabox($post)
                 </p>
                 <p class="description" style="color:#b32d2e;">
                     <strong><?php esc_html_e('Note:', 'ial-reg'); ?></strong>
-                    <?php esc_html_e('Already-registered users will not receive these roles automatically when this configuration changes. Only future registrations are affected.', 'ial-reg'); ?>
+                    <?php esc_html_e('Already-registered users will not receive these roles automatically when this configuration changes. Only future registrations are affected. Use the button below to apply the saved roles retroactively.', 'ial-reg'); ?>
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <th><label><?php esc_html_e('Retroactive application', 'ial-reg'); ?></label></th>
+            <td>
+                <?php
+                $counts = function_exists('ial_count_product_serials_by_state')
+                    ? ial_count_product_serials_by_state($post->ID)
+                    : array('registered' => 0, 'unregistered' => 0, 'total' => 0);
+                $has_roles  = !empty($assign_roles);
+                $can_run    = $has_roles && $counts['registered'] > 0;
+                $retro_nonce = wp_create_nonce('ial_apply_roles_' . $post->ID);
+                ?>
+                <p>
+                    <?php
+                    printf(
+                        /* translators: 1: registered count, 2: unregistered count */
+                        esc_html__('%1$s serials of this product have been registered by a user. %2$s have not.', 'ial-reg'),
+                        '<strong>' . esc_html(number_format_i18n($counts['registered'])) . '</strong>',
+                        '<strong>' . esc_html(number_format_i18n($counts['unregistered'])) . '</strong>'
+                    );
+                    ?>
+                </p>
+                <p>
+                    <button type="button"
+                        class="button"
+                        id="ial_apply_roles_retro_btn"
+                        data-product="<?php echo esc_attr($post->ID); ?>"
+                        data-nonce="<?php echo esc_attr($retro_nonce); ?>"
+                        data-confirm="<?php esc_attr_e('Apply the currently saved roles to all users who have registered a serial of this product? Existing roles are kept; only new ones are added.', 'ial-reg'); ?>"
+                        data-running="<?php esc_attr_e('Applying…', 'ial-reg'); ?>"
+                        data-done-tpl="<?php esc_attr_e('Done. Updated %1$d of %2$d users (%3$d role assignments added).', 'ial-reg'); ?>"
+                        data-error="<?php esc_attr_e('Could not apply roles.', 'ial-reg'); ?>"
+                        <?php disabled(!$can_run); ?>>
+                        <?php esc_html_e('Apply current roles to existing registrations', 'ial-reg'); ?>
+                    </button>
+                    <span id="ial_apply_roles_retro_result" style="margin-left:10px;"></span>
+                </p>
+                <p class="description">
+                    <?php
+                    if (!$has_roles) {
+                        esc_html_e('No roles configured. Select at least one role above and save the product first.', 'ial-reg');
+                    } elseif ($counts['registered'] === 0) {
+                        esc_html_e('No registered serials yet for this product.', 'ial-reg');
+                    } else {
+                        esc_html_e('Applies the saved roles. If you changed the role selection above, save the product first.', 'ial-reg');
+                    }
+                    ?>
                 </p>
             </td>
         </tr>

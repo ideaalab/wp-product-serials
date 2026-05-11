@@ -62,7 +62,15 @@ add_action('manage_ial_product_posts_custom_column', function ($column, $post_id
             break;
 
         case 'frontend_enable':
-            echo get_post_meta($post_id, 'frontend_enable', true) ? '<span style="color:green;">Yes</span>' : '<span style="color:red;">No</span>';
+            $fe_val = get_post_meta($post_id, 'frontend_enable', true) ? 1 : 0;
+            echo $fe_val ? '<span style="color:green;">Yes</span>' : '<span style="color:red;">No</span>';
+            // Hidden payload for Quick Edit JS.
+            printf('<div class="ial-qedit-data" data-key="frontend_enable" data-value="%d" style="display:none"></div>', $fe_val);
+            $acym_val = get_post_meta($post_id, 'acymailing_list_id', true);
+            printf('<div class="ial-qedit-data" data-key="acymailing_list_id" data-value="%s" style="display:none"></div>', esc_attr($acym_val));
+            $roles_val = get_post_meta($post_id, 'assign_roles', true);
+            $roles_csv = is_array($roles_val) ? implode(',', array_map('sanitize_key', $roles_val)) : '';
+            printf('<div class="ial-qedit-data" data-key="assign_roles" data-value="%s" style="display:none"></div>', esc_attr($roles_csv));
             break;
 
         case 'acym_list':

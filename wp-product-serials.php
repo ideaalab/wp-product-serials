@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WP Product Serials
  * Description:       Serial-number registration system for physical products. Manages products, production batches and serials.
- * Version:           3.4.0
+ * Version:           3.5.0
  * Author:            IDEAA Lab | Michael Di Desidero
  * License:           GPL v2 or later
  * Text Domain:       ial-reg
@@ -26,7 +26,7 @@ PucFactory::buildUpdateChecker(
 );
 
 define('IAL_REG_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('IAL_REG_VERSION', '3.4.0');
+define('IAL_REG_VERSION', '3.5.0');
 
 // Main plugin class for IdeaaLab Registrations.
 final class IdeaaLab_Registrations
@@ -74,6 +74,7 @@ final class IdeaaLab_Registrations
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/meta-boxes.php'; // Native Meta Boxes
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-settings.php';
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-columns.php';
+            require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-inline-edit.php';
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-batch.php';
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-charts.php';
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-emails.php'; // New Email System
