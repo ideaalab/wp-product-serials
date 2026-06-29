@@ -58,6 +58,49 @@ function ial_assign_roles_on_registration($serial_id, $user_id, $product_id)
 }
 
 /**
+ * Remove roles configured on a product from a user, but only if the user
+ * does not still hold the role through another currently registered product.
+ *
+ * Defensive: only touches roles that are *currently configured* on the
+ * unbinding product. If the user had the role from a previous configuration
+ * or from another source, we leave it alone.
+ */
+add_action('ial_user_unbound_product', 'ial_remove_roles_on_unbind', 10, 4);
+function ial_remove_roles_on_unbind($serial_id, $user_id, $product_id, $motivo)
+{
+    $user_id    = (int) $user_id;
+    $product_id = (int) $product_id;
+    if (!$user_id || !$product_id) {
+        return;
+    }
+
+    $user = get_userdata($user_id);
+    if (!$user) {
+        return;
+    }
+
+    $roles_on_product = get_post_meta($product_id, 'assign_roles', true);
+    if (!is_array($roles_on_product) || empty($roles_on_product)) {
+        return;
+    }
+
+    $valid_role_keys = array_keys(wp_roles()->get_names());
+
+    foreach ($roles_on_product as $role_key) {
+        $role_key = sanitize_key($role_key);
+        if (!$role_key || !in_array($role_key, $valid_role_keys, true)) {
+            continue;
+        }
+        // Skip if the user still gets this role via another registered product.
+        if (function_exists('ial_user_other_products_with_role')
+            && ial_user_other_products_with_role($user_id, $role_key, $product_id)) {
+            continue;
+        }
+        $user->remove_role($role_key);
+    }
+}
+
+/**
  * Count serials of a product, broken down by registration state.
  * Returns array('registered' => N, 'unregistered' => M, 'total' => N+M).
  */

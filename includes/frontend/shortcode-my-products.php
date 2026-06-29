@@ -145,6 +145,16 @@ function ial_my_registered_products_shortcode()
                             <?php echo wp_kses_post(wpautop($product_notes)); ?>
                         </div>
                     <?php endif; ?>
+
+                    <div class="ial-product-actions">
+                        <a href="#"
+                            class="ial-unbind-link"
+                            data-serial="<?php echo esc_attr($serial_post->ID); ?>"
+                            data-product-name="<?php echo esc_attr($product->post_title); ?>"
+                            data-nonce="<?php echo esc_attr(wp_create_nonce('ial_unbind_serial_' . $serial_post->ID)); ?>">
+                            <?php esc_html_e('Desvincular producto', 'ial-reg'); ?>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -153,6 +163,38 @@ function ial_my_registered_products_shortcode()
 
 
     echo '</div>';
+
+    // Single shared modal at the end of the list. Populated dynamically by JS.
+    ?>
+    <div class="ial-modal" id="ial-unbind-modal" hidden>
+        <div class="ial-modal-backdrop"></div>
+        <div class="ial-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="ial-unbind-title">
+            <button type="button" class="ial-modal-close" aria-label="<?php esc_attr_e('Cerrar', 'ial-reg'); ?>">×</button>
+            <h3 id="ial-unbind-title"><?php esc_html_e('Desvincular producto', 'ial-reg'); ?></h3>
+            <p class="ial-modal-text">
+                <?php
+                printf(
+                    /* translators: %s: product name (rendered in <strong>) */
+                    esc_html__('Esta acción desvinculará %s de tu cuenta. El número de serie quedará disponible para que otra persona lo registre.', 'ial-reg'),
+                    '<strong class="ial-modal-product-name"></strong>'
+                );
+                ?>
+            </p>
+            <label class="ial-modal-field">
+                <span class="ial-modal-label">
+                    <?php esc_html_e('Motivo', 'ial-reg'); ?> <span class="ial-required">*</span>
+                </span>
+                <textarea class="ial-modal-motivo" rows="3" required></textarea>
+                <span class="ial-modal-hint"><?php esc_html_e('Ej.: vendido de segunda mano, regalo, etc.', 'ial-reg'); ?></span>
+            </label>
+            <p class="ial-modal-error" hidden></p>
+            <div class="ial-modal-actions">
+                <button type="button" class="ial-modal-cancel"><?php esc_html_e('Cancelar', 'ial-reg'); ?></button>
+                <button type="button" class="ial-modal-confirm"><?php esc_html_e('Sí, desvincular', 'ial-reg'); ?></button>
+            </div>
+        </div>
+    </div>
+    <?php
 
     wp_reset_postdata();
 

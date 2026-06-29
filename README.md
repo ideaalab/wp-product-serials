@@ -5,7 +5,7 @@ Manages custom post types (Products, Productions, Serials, Campaigns), a fronten
 | | |
 |---|---|
 | **Slug** | `wp-product-serials` |
-| **Version** | 3.5.0 |
+| **Version** | 3.6.0 |
 | **Author** | IDEAA Lab \| Michael Di Desidero |
 | **Requires WP** | 5.8+ |
 | **Requires PHP** | 7.4+ |
@@ -73,6 +73,13 @@ Updates are delivered straight from this GitHub repository through the bundled [
 4. The `Release Plugin ZIP` workflow builds `wp-product-serials-vX.Y.Z.zip` and attaches it to the GitHub Release.
 
 ## Changelog
+
+### 3.6.0
+- New: **"Desvincular producto"** action on the user-facing My Products page (`[ial_my_registered_products]`). User clicks the link, a modal asks for confirmation and a free-text *Motivo*, and on confirm the serial is released for someone else to register.
+- On unbind: clears `uid` and `a_uid` on the serial; appends a timestamped audit line to the serial's `notes` (`[YYYY-MM-DD HH:MM:SS] Desvinculado por el usuario (ID, email). Motivo: …`); fires the new `ial_user_unbound_product` action (`$serial_id, $user_id, $product_id, $motivo`).
+- Role cleanup on unbind: if the user no longer holds any other registered serial of a product that assigns the same role, the role is removed. Roles still granted via another currently-registered product are preserved.
+- AcyMailing cleanup on unbind: if the user no longer holds any other registered serial of a product subscribed to the same list, they are unsubscribed from that list. Subscriptions kept via another currently-registered product are preserved.
+- All user-facing strings in Spanish, code identifiers in English. Nonce + ownership check (`uid === current user`) per serial.
 
 ### 3.5.0
 - Admin menu renamed from **Registrations** to **Product Serials**. The internal slug (`edit.php?post_type=ial_product`) is unchanged, so saved bookmarks keep working. Individual item labels (Product/Products) are unchanged.
