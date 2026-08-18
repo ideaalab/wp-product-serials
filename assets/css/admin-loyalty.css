@@ -1,0 +1,53 @@
+/* Discount tier repeater (plugin settings page) */
+.ial-tiers {
+  max-width: 620px;
+}
+
+.ial-tiers-head,
+.ial-tier-row {
+  display: grid;
+  grid-template-columns: 130px 110px 1fr 28px;
+  gap: 8px;
+  align-items: center;
+}
+
+.ial-tiers-head {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #50575e;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.ial-tier-row {
+  margin-bottom: 6px;
+}
+
+.ial-tier-row input {
+  width: 100%;
+  margin: 0;
+}
+
+.ial-tier-remove {
+  color: #b32d2e;
+  font-size: 18px;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ial-tier-remove:hover {
+  color: #8a2424;
+}
+
+@media screen and (max-width: 782px) {
+  .ial-tiers-head { display: none; }
+  .ial-tier-row {
+    grid-template-columns: 1fr 1fr 28px;
+    margin-bottom: 14px;
+  }
+  /* Threshold and percentage share the first row, the name takes the second. */
+  .ial-tier-row .ial-tier-remove { grid-row: 1; grid-column: 3; }
+  .ial-tier-row input[type="text"] { grid-row: 2; grid-column: 1 / -1; }
+}

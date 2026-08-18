@@ -96,21 +96,8 @@ function ial_my_registered_products_shortcode()
             continue;
         }
 
-        // Robust Image Handling
-        $image_field_value = get_post_meta($product->ID, 'product_image', true);
-        $image_html = '';
-
-        if (is_numeric($image_field_value)) {
-            $image_html = wp_get_attachment_image($image_field_value, 'large', false, array('class' => 'ial-product-img-tag'));
-        } elseif (is_string($image_field_value) && !empty($image_field_value)) {
-            if (filter_var($image_field_value, FILTER_VALIDATE_URL)) {
-                $image_html = sprintf(
-                    '<img src="%s" alt="%s" class="ial-product-img-tag" />',
-                    esc_url($image_field_value),
-                    esc_attr($product->post_title)
-                );
-            }
-        }
+        // Handles both an attachment ID and a plain URL in `product_image`.
+        $image_html = ial_get_product_image_html($product->ID, 'large', 'ial-product-img-tag');
 
         ?>
         <div class="ial-product-card">

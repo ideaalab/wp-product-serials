@@ -72,6 +72,11 @@ function ial_render_product_metabox($post)
         $assign_roles = array();
     }
 
+    // Opt-out: products saved before this field existed have no value stored
+    // and are part of the collection.
+    $in_collection = ('0' === (string) get_post_meta($post->ID, 'show_in_collection', true)) ? 0 : 1;
+    $wc_product_id = (int) get_post_meta($post->ID, 'wc_product_id', true);
+
     // Default checked if new
     if ($post->post_status === 'auto-draft' && get_post_meta($post->ID, 'frontend_enable', true) === '') {
         $enable = 1;
@@ -121,6 +126,50 @@ function ial_render_product_metabox($post)
                 <input type="checkbox" name="frontend_enable" id="ial_frontend_enable" value="1" <?php checked($enable, 1); ?>>
                 <span
                     class="description"><?php esc_html_e('If checked, this product appears in the user\'s "My Products" list.', 'ial-reg'); ?></span>
+            </td>
+        </tr>
+
+        <tr>
+            <th><label for="ial_show_in_collection"><?php esc_html_e('Show in collection?', 'ial-reg'); ?></label></th>
+            <td>
+                <input type="hidden" name="show_in_collection_present" value="1">
+                <input type="checkbox" name="show_in_collection" id="ial_show_in_collection" value="1" <?php checked($in_collection, 1); ?>>
+                <span class="description">
+                    <?php esc_html_e('If checked, this product appears in the customer\'s collection panel — including as a "not owned yet" card for those who have not registered it. Uncheck for discontinued or unannounced products.', 'ial-reg'); ?>
+                </span>
+            </td>
+        </tr>
+
+        <tr>
+            <th><label for="ial_wc_product_id"><?php esc_html_e('WooCommerce product', 'ial-reg'); ?></label></th>
+            <td>
+                <input type="hidden" name="wc_product_id" value="">
+                <?php
+                $wc_product = ($wc_product_id && function_exists('wc_get_product')) ? wc_get_product($wc_product_id) : null;
+
+                if (class_exists('WooCommerce')) {
+                    ?>
+                    <select class="wc-product-search" id="ial_wc_product_id" name="wc_product_id" style="width:400px;"
+                        data-placeholder="<?php esc_attr_e('Search for a product…', 'ial-reg'); ?>"
+                        data-action="woocommerce_json_search_products_and_variations"
+                        data-allow_clear="true">
+                        <?php if ($wc_product): ?>
+                            <option value="<?php echo esc_attr($wc_product_id); ?>" selected>
+                                <?php echo esc_html(wp_strip_all_tags($wc_product->get_formatted_name())); ?>
+                            </option>
+                        <?php endif; ?>
+                    </select>
+                    <?php
+                } else {
+                    ?>
+                    <input type="number" min="0" step="1" class="regular-text" id="ial_wc_product_id"
+                        name="wc_product_id" value="<?php echo esc_attr($wc_product_id ?: ''); ?>">
+                    <?php
+                }
+                ?>
+                <p class="description">
+                    <?php esc_html_e('The shop product this corresponds to. Used to link the "not owned yet" cards in the collection panel to the store.', 'ial-reg'); ?>
+                </p>
             </td>
         </tr>
 
@@ -437,6 +486,16 @@ function ial_save_plugin_meta_data($post_id)
 
         $enable = isset($_POST['frontend_enable']) ? 1 : 0;
         update_post_meta($post_id, 'frontend_enable', $enable);
+
+        // Guarded by its own marker so the meta box is the only thing that can
+        // clear it — an unchecked box submits nothing.
+        if (isset($_POST['show_in_collection_present'])) {
+            update_post_meta($post_id, 'show_in_collection', isset($_POST['show_in_collection']) ? 1 : 0);
+        }
+
+        if (isset($_POST['wc_product_id'])) {
+            update_post_meta($post_id, 'wc_product_id', absint($_POST['wc_product_id']));
+        }
 
         if (isset($_POST['acymailing_list_id']))
             update_post_meta($post_id, 'acymailing_list_id', sanitize_text_field($_POST['acymailing_list_id']));

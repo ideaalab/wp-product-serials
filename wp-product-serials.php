@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       WP Product Serials
  * Description:       Serial-number registration system for physical products. Manages products, production batches and serials.
- * Version:           3.6.0
+ * Version:           3.7.0
  * Author:            IDEAA Lab | Michael Di Desidero
  * License:           GPL v2 or later
  * Text Domain:       ial-reg
@@ -26,7 +26,7 @@ PucFactory::buildUpdateChecker(
 );
 
 define('IAL_REG_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('IAL_REG_VERSION', '3.6.0');
+define('IAL_REG_VERSION', '3.7.0');
 
 // Main plugin class for IdeaaLab Registrations.
 final class IdeaaLab_Registrations
@@ -68,12 +68,14 @@ final class IdeaaLab_Registrations
         require_once IAL_REG_PLUGIN_PATH . 'includes/core/woocommerce-integration.php';
         require_once IAL_REG_PLUGIN_PATH . 'includes/core/role-assignment.php';
         require_once IAL_REG_PLUGIN_PATH . 'includes/core/unbind.php';
+        require_once IAL_REG_PLUGIN_PATH . 'includes/core/loyalty-discount.php';
         require_once IAL_REG_PLUGIN_PATH . 'includes/integrations/acymailing.php';
 
         // 2. ADMIN
         if (is_admin()) {
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/meta-boxes.php'; // Native Meta Boxes
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-settings.php';
+            require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-loyalty-settings.php';
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-columns.php';
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-inline-edit.php';
             require_once IAL_REG_PLUGIN_PATH . 'includes/admin/admin-batch.php';
@@ -85,6 +87,7 @@ final class IdeaaLab_Registrations
         if (!is_admin() || wp_doing_ajax()) {
             require_once IAL_REG_PLUGIN_PATH . 'includes/frontend/shortcode-form.php';
             require_once IAL_REG_PLUGIN_PATH . 'includes/frontend/shortcode-my-products.php';
+            require_once IAL_REG_PLUGIN_PATH . 'includes/frontend/shortcode-collection.php';
             require_once IAL_REG_PLUGIN_PATH . 'includes/frontend/frontend-assets.php';
         }
     }

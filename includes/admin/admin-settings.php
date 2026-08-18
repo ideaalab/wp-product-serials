@@ -98,11 +98,35 @@ function ial_enqueue_admin_media_scripts()
 }
 add_action('admin_enqueue_scripts', 'ial_enqueue_admin_media_scripts');
 
+/**
+ * WooCommerce's searchable product select, used by the "WooCommerce product"
+ * field on the Product screen. Runs late so WooCommerce has registered the
+ * handle and localised its parameters first.
+ */
+function ial_enqueue_wc_product_search()
+{
+    if (!class_exists('WooCommerce')) {
+        return;
+    }
+
+    $screen = get_current_screen();
+    if (!$screen || $screen->post_type !== 'ial_product' || $screen->base !== 'post') {
+        return;
+    }
+
+    if (wp_script_is('wc-enhanced-select', 'registered')) {
+        wp_enqueue_script('wc-enhanced-select');
+        wp_enqueue_style('woocommerce_admin_styles');
+    }
+}
+add_action('admin_enqueue_scripts', 'ial_enqueue_wc_product_search', 20);
+
 function ial_render_settings_page()
 {
     ?>
     <div class="wrap">
         <h1><?php echo esc_html__('Registration Settings', 'ial-reg'); ?></h1>
+        <?php settings_errors(); ?>
         <form action="options.php" method="POST">
             <?php settings_fields('ial_settings_group');
             do_settings_sections('ial-reg-settings');

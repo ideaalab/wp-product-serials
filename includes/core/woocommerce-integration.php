@@ -71,8 +71,12 @@ function ial_my_products_endpoint_content()
     echo $register_button_html;
     echo '</div>';
 
-    // Render the shortcode that displays the list of registered products.
+    // 1. The products the customer has registered.
     echo do_shortcode('[ial_my_registered_products]');
+
+    // 2. "Descuento permanente" + tier progress, then "Colección" + the full
+    //    grid. Both headings are printed by the shortcode itself.
+    echo do_shortcode('[ial_product_collection]');
 }
 
 // Detects the activation of the WooCommerce plugin.

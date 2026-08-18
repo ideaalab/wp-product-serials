@@ -11,16 +11,31 @@ function ial_enqueue_frontend_assets()
 
     $is_my_products = is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'ial_my_registered_products');
     $is_registration = is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'ial_registration_form');
+    $is_collection  = is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'ial_product_collection');
     $is_account     = function_exists('is_account_page') && is_account_page();
 
+    // The loyalty notice is printed on single product pages.
+    $is_product = function_exists('is_product') && is_product();
+
     // Conditional CSS loading.
-    if ($is_my_products || $is_registration || $is_account) {
+    if ($is_my_products || $is_registration || $is_collection || $is_account || $is_product) {
         wp_enqueue_style('dashicons');
         wp_enqueue_style(
             'ial-frontend',
             plugin_dir_url(__FILE__) . '../../assets/css/ial-frontend.css',
             array(),
             IAL_REG_VERSION
+        );
+    }
+
+    // Progress bar intro + confetti, wherever the loyalty panel is rendered.
+    if (is_user_logged_in() && ($is_collection || $is_account)) {
+        wp_enqueue_script(
+            'ial-frontend-loyalty',
+            plugin_dir_url(__FILE__) . '../../assets/js/frontend-loyalty.js',
+            array(),
+            IAL_REG_VERSION,
+            true
         );
     }
 

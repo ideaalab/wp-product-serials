@@ -5,7 +5,7 @@ Manages custom post types (Products, Productions, Serials, Campaigns), a fronten
 | | |
 |---|---|
 | **Slug** | `wp-product-serials` |
-| **Version** | 3.6.0 |
+| **Version** | 3.7.0 |
 | **Author** | IDEAA Lab \| Michael Di Desidero |
 | **Requires WP** | 5.8+ |
 | **Requires PHP** | 7.4+ |
@@ -33,6 +33,18 @@ Manages custom post types (Products, Productions, Serials, Campaigns), a fronten
 
 - Shortcode `[ial_my_registered_products]` for a grid of products owned by the user.
 - Adds a **Your Registered Products** tab to the WooCommerce *My Account* area.
+- Shortcode `[ial_product_collection]` for the collection panel: tier progress plus every product, with the ones not yet registered dimmed and linked to the shop.
+
+### Loyalty Discount (WooCommerce)
+
+- Automatic percentage discount for customers, based on how many products they have registered.
+- Tiers are fully configurable in **Product Serials → Settings**: as many layers as you want (one flat 10%, or 5% → 10% → 15%, or anything else), each with its own threshold, percentage and optional name.
+- Levelling criterion is a dropdown: *different products registered* or *serials registered (units)*.
+- **It never stacks.** On each cart line the bigger of the price everything else in the shop settled on — sale price, quantity discount, dynamic pricing plugin — and the loyalty discount wins; against a coupon the customer types, the bigger of the two wins and the loser is dropped with an explanatory notice.
+- Runs last on `woocommerce_before_calculate_totals` (priority 9999, filterable via `ial_loyalty_price_priority`) precisely so that comparison holds: at an earlier priority another pricing plugin would take the already-discounted price as its base and the two would multiply.
+- Global cap and per-category exclusions as margin safety nets.
+- Applied by overriding the cart line price, so WooCommerce computes taxes from each product's own tax class. The discount amount and level are recorded on the order (`_ial_loyalty_percent`, `_ial_loyalty_discount_total`) and on each line item, since a line-price discount does not show up in WooCommerce's discount reports.
+- Catalogue prices are deliberately untouched: the product page shows a notice ("you have X% off, applied in the cart"), so page caching stays safe.
 
 ### Admin Tools
 
@@ -73,6 +85,19 @@ Updates are delivered straight from this GitHub repository through the bundled [
 4. The `Release Plugin ZIP` workflow builds `wp-product-serials-vX.Y.Z.zip` and attaches it to the GitHub Release.
 
 ## Changelog
+
+### 3.7.0
+- New: **loyalty discount** for WooCommerce. Customers get a percentage off based on how many products they have registered, with as many tiers as the admin configures (threshold + percentage + optional name per tier) and a dropdown to choose whether levelling counts *different products* or *serials (units)*.
+- Never stacks, by design. Per cart line the bigger of the loyalty discount and whatever price the rest of the shop settled on — sale price, quantity discount, dynamic pricing plugin — wins. Against a coupon entered by the customer, the bigger of the two wins: if loyalty wins the coupon is removed, if the coupon wins loyalty is suspended — both cases with a notice explaining why.
+- Applied as a cart line-price override derived from the regular price, which makes it idempotent (the hook can fire any number of times without compounding) and leaves tax calculation to WooCommerce. It hooks `woocommerce_before_calculate_totals` at priority 9999 — filterable with `ial_loyalty_price_priority` — so it is the last thing to touch the price and can compare against whatever other pricing plugins settled on. Running earlier would let a quantity-discount or dynamic-pricing plugin use the already-discounted price as its base, multiplying the two.
+- Margin safety nets: global maximum percentage and per-category exclusions. Filter `ial_loyalty_exclude_product` for anything finer.
+- Order records: `_ial_loyalty_percent` and `_ial_loyalty_discount_total` on the order, percentage and amount saved per line item, plus a summary in the admin order screen — a line-price discount is invisible to WooCommerce's discount reports otherwise.
+- A user's level is cached in user meta and recalculated on registration and unbind. Changing the tier settings invalidates every cached level automatically, so no batch job is needed.
+- New: **collection panel** in *My Account* (`[ial_product_collection]`). Progress bar across every tier with the discount each one unlocks, plus the full product collection — registered ones marked, missing ones dimmed and linked to their shop page. The tab is laid out in three sections: **Tus productos registrados**, **Descuento permanente** and **Colección**.
+- Cart and checkout print `TIER − N% aplicado` (e.g. `Iniciado − 5% aplicado`) under the product name, with no label in front — it goes through `woocommerce_cart_item_name` rather than `woocommerce_get_item_data`, which always renders as `Key: value`. Order line items, where meta is always rendered as `label: value`, use the tier name as the label: `Iniciado: −5% aplicado`. Both fall back to the percentage alone when the tier has no name.
+- The progress bar plays an intro when the panel scrolls into view: it fills up to the customer's current tier, each milestone lights up as the bar reaches it, and a short confetti burst fires from the tier they are on. Vanilla JS on a canvas, no libraries. The final width is rendered server-side, so with JavaScript off the bar is simply already correct, and the whole intro is skipped when the visitor asks for reduced motion.
+- New: **product page notice** for logged-in customers — their current level and discount, or how many products they need to reach the first tier, or a heads-up that this product's own offer already beats their discount. Hooked to `woocommerce_single_product_summary` at priority 11 and retargetable with the `ial_loyalty_notice_hook` / `ial_loyalty_notice_priority` filters; the `[ial_loyalty_notice]` shortcode covers themes and page builders that never fire the standard product hooks. Catalogue prices themselves are left untouched, so page caching is unaffected.
+- New Product fields: **Show in collection?** (opt-out; products saved before this version stay visible) and **WooCommerce product**, which links an `ial_product` to its shop product so the "not owned yet" cards can link to the store.
 
 ### 3.6.0
 - New: **"Desvincular producto"** action on the user-facing My Products page (`[ial_my_registered_products]`). User clicks the link, a modal asks for confirmation and a free-text *Motivo*, and on confirm the serial is released for someone else to register.
