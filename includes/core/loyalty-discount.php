@@ -19,6 +19,8 @@ if (!defined('ABSPATH')) {
  *   can fire any number of times per request without compounding.
  * - It never stacks. Per line, the bigger of (existing offer, loyalty) wins.
  *   Against manual coupons, the bigger of (coupon, loyalty) wins.
+ * - It runs last on that hook (priority 9999) so the comparison also covers
+ *   discounts applied by other plugins, which would otherwise multiply.
  */
 
 /* -------------------------------------------------------------------------
@@ -537,6 +539,16 @@ function ial_loyalty_apply_cart_prices($cart)
  * session, so a coupon that stopped being the better deal (because the cart
  * changed) is cleaned up on the next page load. Never runs during totals
  * calculation, where removing a coupon would re-enter the calculation.
+ *
+ * KNOWN LIMITATION (not hit by the shop as configured today, revisit if it is).
+ * This runs before `woocommerce_before_calculate_totals`, so the prices it
+ * reads are the ones WooCommerce itself knows about — a quantity-discount or
+ * dynamic-pricing plugin has not run yet. On a cart where such a plugin is
+ * active, the loyalty saving estimated here is too high, and a coupon could be
+ * removed for "losing" when it was actually the better deal. Only matters when
+ * manual coupons and third-party price discounts meet on the same products.
+ * The fix is to arbitrate after totals are calculated, where prices are final;
+ * it changes when coupons get removed, so it needs deciding, not just doing.
  */
 function ial_loyalty_arbitrate_coupons($context = '')
 {
