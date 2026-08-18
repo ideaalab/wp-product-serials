@@ -5,7 +5,7 @@ Manages custom post types (Products, Productions, Serials, Campaigns), a fronten
 | | |
 |---|---|
 | **Slug** | `wp-product-serials` |
-| **Version** | 3.7.0 |
+| **Version** | 3.7.1 |
 | **Author** | IDEAA Lab \| Michael Di Desidero |
 | **Requires WP** | 5.8+ |
 | **Requires PHP** | 7.4+ |
@@ -85,6 +85,16 @@ Updates are delivered straight from this GitHub repository through the bundled [
 4. The `Release Plugin ZIP` workflow builds `wp-product-serials-vX.Y.Z.zip` and attaches it to the GitHub Release.
 
 ## Changelog
+
+### 3.7.1
+- Fix: the registration form could report **"Este número de serie ya ha sido registrado"** for a registration that had in fact just succeeded. The form processed the POST inside the shortcode render and never redirected, so a double click, an F5 on the result page, a *Back → resend*, or a theme/page builder rendering the content twice all ran the submission a second time: the first pass registered the serial, the second found it taken and printed the error over it.
+  - The submission is now handled once per request on `template_redirect`, before anything is rendered, and answered with a redirect (post/redirect/get). Reloading the result page no longer resubmits anything. The outcome travels in a short-lived transient referenced by a token in the URL, so the message and the repopulated fields survive the redirect.
+  - A serial that is already registered **to the customer's own account** is no longer an error: it now shows a neutral "ya está registrado en tu cuenta" notice with a link to their products. When it belongs to *another* account the error says so explicitly, which is what support needs to tell the two cases apart.
+  - The submit button disables itself on the first click (labelled *Registrando…*) and a second submit of the same form is blocked, so the slow part of a registration (mailing list, roles) can no longer be double-fired.
+- Fix: registering while logged out silently did nothing useful — the serial was stamped with the buyer's name, purchase date and seller but linked to nobody, and the form still answered "¡Registro completo!". It now asks the customer to log in first, with a link back to the form, and writes nothing.
+- Fix: the per-IP rate limiter counted *every* submission, so registering six products in a row within a minute of each other locked the customer out for 10 minutes. Only failed lookups count now.
+- Fix: `wp_unslash()` before sanitizing the posted fields. Names and sellers with an apostrophe (`O'Neill`) were stored escaped (`O\'Neill`).
+- Hardening: when several `ial_serial` posts share the same serial number (older or imported data — batch creation has enforced uniqueness for a while), the lookup now prefers the one belonging to the selected product that is still unregistered, instead of taking an arbitrary row and possibly rejecting a legitimate registration.
 
 ### 3.7.0
 - New: **loyalty discount** for WooCommerce. Customers get a percentage off based on how many products they have registered, with as many tiers as the admin configures (threshold + percentage + optional name per tier) and a dropdown to choose whether levelling counts *different products* or *serials (units)*.
