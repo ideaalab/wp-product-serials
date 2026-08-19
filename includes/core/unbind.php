@@ -74,9 +74,13 @@ function ial_user_other_products_with_acym_list($user_id, $list_id, $exclude_pro
 }
 
 /**
- * Core unbind logic. Validates ownership, clears uid + a_uid, appends a
- * timestamped audit line to `notes` with the motivo, fires
+ * Core unbind logic. Validates ownership, moves the registration data into the
+ * `notes` audit line and clears it along with uid + a_uid, then fires
  * `ial_user_unbound_product` so listeners (roles, AcyMailing) can react.
+ *
+ * The listeners run after the response has been sent: the customer is waiting
+ * on a modal and none of what they are told depends on an AcyMailing call or a
+ * role plugin finishing first.
  *
  * Returns: array('ok' => bool, 'message' => string).
  */
@@ -125,13 +129,42 @@ function ial_unbind_serial($serial_id, $user_id, $motivo)
         __('Motivo:', 'ial-reg'),
         $motivo
     );
+
+    // The registration data is about to be cleared, so it moves into the notes
+    // first. Notes are internal, and knowing who a unit came from is what tells
+    // a second-hand sale apart from a return.
+    $previous = array();
+    foreach (array(
+        'u_name'   => __('Nombre:', 'ial-reg'),
+        'purchase' => __('Fecha de compra:', 'ial-reg'),
+        'seller'   => __('Vendedor:', 'ial-reg'),
+    ) as $meta_key => $label) {
+        $value = trim((string) get_post_meta($serial_id, $meta_key, true));
+        if ($value !== '') {
+            $previous[] = $label . ' ' . $value;
+        }
+    }
+
+    if (!empty($previous)) {
+        $audit_line .= "\n" . __('Registro anterior:', 'ial-reg') . ' ' . implode(' | ', $previous);
+    }
+
     $new_notes = $current_notes !== ''
         ? rtrim($current_notes) . "\n\n" . $audit_line
         : $audit_line;
 
+    // Release the serial: it has to look untouched to whoever registers it next.
     delete_post_meta($serial_id, 'uid');
     delete_post_meta($serial_id, 'a_uid');
+    delete_post_meta($serial_id, 'u_name');
+    delete_post_meta($serial_id, 'purchase');
+    delete_post_meta($serial_id, 'seller');
     update_post_meta($serial_id, 'notes', $new_notes);
+
+    // Cheap, and the customer may look at their discount on the next page.
+    if (function_exists('ial_loyalty_refresh_user')) {
+        ial_loyalty_refresh_user($user_id);
+    }
 
     /**
      * Fires after a user has successfully unbound a serial from their account.
@@ -142,7 +175,26 @@ function ial_unbind_serial($serial_id, $user_id, $motivo)
      * @param int    $product_id The product ID the serial belongs to.
      * @param string $motivo     Free-text reason supplied by the user.
      */
-    do_action('ial_user_unbound_product', $serial_id, $user_id, $product_id, $motivo);
+    $fire = function () use ($serial_id, $user_id, $product_id, $motivo) {
+        do_action('ial_user_unbound_product', $serial_id, $user_id, $product_id, $motivo);
+    };
+
+    /**
+     * Whether to run the unbind side effects after the response.
+     *
+     * @param bool   $deferred   True when the connection can be closed early.
+     * @param int    $serial_id  Serial that was unbound.
+     * @param int    $user_id    User it was unbound from.
+     * @param int    $product_id Product the serial belongs to.
+     * @param string $motivo     Reason the user gave.
+     */
+    $deferred = apply_filters('ial_defer_unbind_side_effects', ial_can_run_after_response(), $serial_id, $user_id, $product_id, $motivo);
+
+    if ($deferred) {
+        ial_run_after_response($fire);
+    } else {
+        $fire();
+    }
 
     $result['ok']      = true;
     $result['message'] = __('Producto desvinculado correctamente.', 'ial-reg');
