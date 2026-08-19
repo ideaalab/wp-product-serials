@@ -5,7 +5,7 @@ Manages custom post types (Products, Productions, Serials, Campaigns), a fronten
 | | |
 |---|---|
 | **Slug** | `wp-product-serials` |
-| **Version** | 3.8.0 |
+| **Version** | 3.8.1 |
 | **Author** | IDEAA Lab \| Michael Di Desidero |
 | **Requires WP** | 5.8+ |
 | **Requires PHP** | 7.4+ |
@@ -87,6 +87,10 @@ Updates are delivered straight from this GitHub repository through the bundled [
 
 ## Changelog
 
+### 3.8.1
+- The unbind flow gets the same treatment as registration in 3.7.1: its listeners (AcyMailing unsubscribe, role removal) now run **after the response has been sent**, so the customer is no longer staring at the modal while an external mailing-list call finishes. The serial is released before the answer goes out, and the loyalty level is recalculated inline. New filter `ial_defer_unbind_side_effects`.
+- Unbinding now **moves the registration data into the notes and clears it**. The audit line gains a second line — `Registro anterior: Nombre: … | Fecha de compra: … | Vendedor: …` — listing only the fields that had a value, and `u_name`, `purchase` and `seller` are deleted along with `uid` and `a_uid`. Notes are internal, so the trail of who a unit came from stays where it is useful (telling a second-hand sale apart from a return) while the serial itself looks untouched to whoever registers it next.
+- The deferral mechanism moved to `includes/core/after-response.php` (`ial_run_after_response()`, `ial_can_run_after_response()`), shared by both flows and loaded in core so it is available in the admin too. One behaviour change from 3.7.1: `ial_defer_registration_side_effects` can now only *disable* deferral — it can no longer force it on a SAPI that cannot close the connection early, where deferring bought nothing anyway.
 ### 3.8.0
 - The category exclusion list is now a full **scope filter**: a toggle between *everywhere except what I pick* and *only on what I pick*, plus two lists — product categories and individual products, both searchable multi-selects. The two lists add up: a product matches if it is named by either.
 - Categories match hierarchically. Picking a parent category covers every subcategory under it, which is what the setting looks like it promises — `has_term()` on its own only matches terms assigned directly to the product, and shops normally file a product under its leaf category alone.

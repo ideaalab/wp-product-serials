@@ -161,18 +161,14 @@ function ial_registration_fail( $message, $fields, $rate ) {
 /**
  * Fire the post-registration listeners after the response has been sent.
  *
- * Registering a serial drags in slow, external work: the AcyMailing
- * subscription, whatever the role plugins do when a role is added, any mail
- * that goes out over SMTP. The customer used to wait for all of it with the
- * button still live, which is precisely what produced the double clicks. The
- * serial is already claimed by the time this runs, so none of it needs to
- * happen before the browser gets its answer.
- *
- * Falls back to running everything inline when the SAPI cannot close the
- * connection early (mod_php), which is the behaviour this replaces.
+ * The serial is already claimed by the time this runs, so nothing the
+ * customer is told depends on the listeners finishing first. See
+ * `ial_run_after_response()` for the mechanics and the mod_php fallback.
  */
 function ial_registration_dispatch_side_effects( $serial_id, $user_id, $product_id ) {
-    $can_close = function_exists( 'litespeed_finish_request' ) || function_exists( 'fastcgi_finish_request' );
+    $fire = function () use ( $serial_id, $user_id, $product_id ) {
+        do_action( 'ial_user_registered_product', $serial_id, $user_id, $product_id );
+    };
 
     /**
      * Whether to run the registration side effects after the response.
@@ -182,25 +178,14 @@ function ial_registration_dispatch_side_effects( $serial_id, $user_id, $product_
      * @param int  $user_id    User it was registered to.
      * @param int  $product_id Product the serial belongs to.
      */
-    $deferred = apply_filters( 'ial_defer_registration_side_effects', $can_close, $serial_id, $user_id, $product_id );
+    $deferred = apply_filters( 'ial_defer_registration_side_effects', ial_can_run_after_response(), $serial_id, $user_id, $product_id );
 
-    if ( ! $deferred ) {
-        do_action( 'ial_user_registered_product', $serial_id, $user_id, $product_id );
+    if ( $deferred ) {
+        ial_run_after_response( $fire );
         return;
     }
 
-    register_shutdown_function( function () use ( $serial_id, $user_id, $product_id ) {
-        // Keep going once the browser is gone: from here on nobody is waiting.
-        ignore_user_abort( true );
-
-        if ( function_exists( 'litespeed_finish_request' ) ) {
-            litespeed_finish_request();
-        } elseif ( function_exists( 'fastcgi_finish_request' ) ) {
-            fastcgi_finish_request();
-        }
-
-        do_action( 'ial_user_registered_product', $serial_id, $user_id, $product_id );
-    } );
+    $fire();
 }
 
 /**
