@@ -15,6 +15,14 @@ function ial_my_registered_products_shortcode()
         return ob_get_clean();
     }
 
+    // A registration that just landed here from the form announces itself.
+    if (function_exists('ial_registration_stored_result')) {
+        $registration_result = ial_registration_stored_result();
+        if ($registration_result) {
+            echo ial_registration_render_result($registration_result);
+        }
+    }
+
     $current_user_id = get_current_user_id();
 
     // 1. Retrieve all registered serials for the current user.
