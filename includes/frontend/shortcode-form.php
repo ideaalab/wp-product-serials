@@ -354,6 +354,47 @@ function ial_registration_stored_result() {
 }
 
 /**
+ * Feedback banner for one submission outcome. Shared by the form and by the
+ * customer's products panel, which is where a successful registration lands.
+ */
+function ial_registration_render_result( $result ) {
+    if ( empty( $result['type'] ) ) {
+        return '';
+    }
+
+    $classes = array(
+        'success' => 'ial-form-success',
+        'notice'  => 'ial-form-notice',
+        'error'   => 'ial-form-error',
+    );
+    $class = isset( $classes[ $result['type'] ] ) ? $classes[ $result['type'] ] : 'ial-form-error';
+
+    $html = '<p class="' . esc_attr( $class ) . '">' . esc_html( $result['message'] );
+    if ( ! empty( $result['link']['url'] ) ) {
+        $html .= ' <a href="' . esc_url( $result['link']['url'] ) . '">' . esc_html( $result['link']['text'] ) . '</a>';
+    }
+    $html .= '</p>';
+
+    return $html;
+}
+
+/**
+ * Where to send the customer once the serial is theirs: their own products
+ * panel, so they can see what they just registered. Falls back to the form
+ * page when there is no such panel (no WooCommerce).
+ */
+function ial_registration_success_redirect_url() {
+    /**
+     * Filter the landing page after a successful registration.
+     *
+     * Return an empty string to keep the customer on the form.
+     *
+     * @param string $url Products panel URL, empty when there is none.
+     */
+    return (string) apply_filters( 'ial_registration_success_redirect', ial_registration_my_products_url() );
+}
+
+/**
  * Post/redirect/get: handle the submission before anything is rendered and
  * bounce the browser to a plain GET, so reloading the page (or hitting back)
  * cannot send the same registration twice.
@@ -372,7 +413,20 @@ function ial_registration_handle_submit() {
         return;
     }
 
-    $url = add_query_arg( 'ial_reg', ial_registration_store_result( $result ), ial_registration_current_url() );
+    // A settled serial — just registered, or already theirs — goes to the
+    // customer's products panel, where they can see it. Anything they have to
+    // correct stays on the form, with the fields they typed.
+    $settled = in_array( $result['type'], array( 'success', 'notice' ), true );
+    $target  = $settled ? ial_registration_success_redirect_url() : '';
+
+    if ( $target ) {
+        // The panel is the page they are landing on, so the link to it goes.
+        $result['link'] = array();
+    } else {
+        $target = ial_registration_current_url();
+    }
+
+    $url = add_query_arg( 'ial_reg', ial_registration_store_result( $result ), $target );
 
     wp_safe_redirect( $url, 303 );
     exit;
@@ -395,25 +449,12 @@ function ial_registration_form_shortcode() {
         }
     }
 
-    $classes = array(
-        'success' => 'ial-form-success',
-        'notice'  => 'ial-form-notice',
-        'error'   => 'ial-form-error',
-    );
-
     // Render the form and feedback messages.
     echo '<div id="ial-registration-wrapper" class="ial-registration-container">';
     echo '<h3>' . esc_html__( 'Registra tu producto', 'ial-reg' ) . '</h3>';
 
     if ( $result ) {
-        $class = isset( $classes[ $result['type'] ] ) ? $classes[ $result['type'] ] : 'ial-form-error';
-
-        echo '<p class="' . esc_attr( $class ) . '">';
-        echo esc_html( $result['message'] );
-        if ( ! empty( $result['link']['url'] ) ) {
-            echo ' <a href="' . esc_url( $result['link']['url'] ) . '">' . esc_html( $result['link']['text'] ) . '</a>';
-        }
-        echo '</p>';
+        echo ial_registration_render_result( $result );
     }
 
     // Add JavaScript to scroll to the form messages after submission.
