@@ -89,6 +89,18 @@ function ial_registration_my_products_url() {
     return '';
 }
 
+// Where someone without a session goes to get one.
+function ial_registration_login_url() {
+    if ( function_exists( 'wc_get_page_permalink' ) ) {
+        $account = wc_get_page_permalink( 'myaccount' );
+        if ( $account ) {
+            return $account;
+        }
+    }
+
+    return wp_login_url( ial_registration_current_url() );
+}
+
 // Current frontend URL, used for the post/redirect/get round trip.
 function ial_registration_current_url() {
     $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
@@ -223,7 +235,7 @@ function ial_run_registration_submission() {
             __( 'Error: Debes iniciar sesión con tu cuenta para registrar un producto.', 'ial-reg' ),
             $fields,
             array(
-                'url'  => wp_login_url( ial_registration_current_url() ),
+                'url'  => ial_registration_login_url(),
                 'text' => __( 'Iniciar sesión', 'ial-reg' ),
             )
         );
@@ -435,6 +447,22 @@ function ial_registration_handle_submit() {
 // Register and render the product registration form shortcode.
 function ial_registration_form_shortcode() {
     ob_start();
+
+    // A serial is linked to an account, so there is nothing to fill in without
+    // one. Where a page builder already gates the row by role this never runs
+    // — the shortcode is not reached at all — so the two can never both show.
+    if ( ! is_user_logged_in() ) {
+        echo '<div id="ial-registration-wrapper" class="ial-registration-container">';
+        echo '<h3>' . esc_html__( 'Registra tu producto', 'ial-reg' ) . '</h3>';
+        echo '<p class="ial-form-notice">';
+        echo esc_html__( 'Necesitas una cuenta para registrar un producto.', 'ial-reg' );
+        echo ' <a href="' . esc_url( ial_registration_login_url() ) . '">';
+        echo esc_html__( 'Accede o crea una', 'ial-reg' ) . '</a>';
+        echo '</p>';
+        echo '</div>';
+
+        return ob_get_clean();
+    }
 
     $result = ial_process_registration_submission();
     if ( null === $result ) {
