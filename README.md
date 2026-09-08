@@ -5,7 +5,7 @@ Manages custom post types (Products, Productions, Serials, Campaigns), a fronten
 | | |
 |---|---|
 | **Slug** | `wp-product-serials` |
-| **Version** | 3.7.1 |
+| **Version** | 3.8.0 |
 | **Author** | IDEAA Lab \| Michael Di Desidero |
 | **Requires WP** | 5.8+ |
 | **Requires PHP** | 7.4+ |
@@ -42,7 +42,8 @@ Manages custom post types (Products, Productions, Serials, Campaigns), a fronten
 - Levelling criterion is a dropdown: *different products registered* or *serials registered (units)*.
 - **It never stacks.** On each cart line the bigger of the price everything else in the shop settled on — sale price, quantity discount, dynamic pricing plugin — and the loyalty discount wins; against a coupon the customer types, the bigger of the two wins and the loser is dropped with an explanatory notice.
 - Runs last on `woocommerce_before_calculate_totals` (priority 9999, filterable via `ial_loyalty_price_priority`) precisely so that comparison holds: at an earlier priority another pricing plugin would take the already-discounted price as its base and the two would multiply.
-- Global cap and per-category exclusions as margin safety nets.
+- Scope control: an include/exclude toggle plus two lists — product categories and individual products. *Everywhere except what I pick* keeps the discount off a few things (outlet, spare parts, thin margins); *only on what I pick* restricts it to a chosen range. Categories cover everything filed underneath them, the two lists add up, and a variation is matched by its own ID or its parent's.
+- Global cap as the other margin safety net.
 - Applied by overriding the cart line price, so WooCommerce computes taxes from each product's own tax class. The discount amount and level are recorded on the order (`_ial_loyalty_percent`, `_ial_loyalty_discount_total`) and on each line item, since a line-price discount does not show up in WooCommerce's discount reports.
 - Catalogue prices are deliberately untouched: the product page shows a notice ("you have X% off, applied in the cart"), so page caching stays safe.
 
@@ -85,6 +86,15 @@ Updates are delivered straight from this GitHub repository through the bundled [
 4. The `Release Plugin ZIP` workflow builds `wp-product-serials-vX.Y.Z.zip` and attaches it to the GitHub Release.
 
 ## Changelog
+
+### 3.8.0
+- The category exclusion list is now a full **scope filter**: a toggle between *everywhere except what I pick* and *only on what I pick*, plus two lists — product categories and individual products, both searchable multi-selects. The two lists add up: a product matches if it is named by either.
+- Categories match hierarchically. Picking a parent category covers every subcategory under it, which is what the setting looks like it promises — `has_term()` on its own only matches terms assigned directly to the product, and shops normally file a product under its leaf category alone.
+- Variations are matched by their own ID or by their parent's, so selecting a variable product in the settings covers all of its variations, and a single variation can be singled out.
+- On *only on what I pick* with both lists empty, nothing qualifies and no discount is applied — the literal reading of an empty allow-list. Saving that combination shows a warning on the settings screen explaining it.
+- Existing `excluded_cats` settings from 3.7.x are read as an exclude filter, so upgrading changes nothing; the next save writes the current shape.
+- New filter `ial_loyalty_product_qualifies` (`$qualifies`, `$product`) for full control over which products the discount applies to. `ial_loyalty_exclude_product` still works as a veto that can only take the discount away.
+- The **Registrar nuevo producto** action in *My Account* is now a real button — solid background, its own padding and a `+` glyph — instead of inheriting whatever the theme does with `.button`, which rendered it as plain text and made it easy to miss.
 
 ### 3.7.1
 - Fix: the registration form could report **"Este número de serie ya ha sido registrado"** for a registration that had in fact just succeeded. The form processed the POST inside the shortcode render and never redirected, so a double click, an F5 on the result page, a *Back → resend*, or a theme/page builder rendering the content twice all ran the submission a second time: the first pass registered the serial, the second found it taken and printed the error over it.

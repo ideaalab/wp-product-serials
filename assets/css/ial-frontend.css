@@ -601,3 +601,43 @@ a.ial-collection-inner:hover {
   color: inherit;
 }
 
+
+/* Primary action button. Themes style `.button` very differently — sometimes as
+   plain text — so this carries its own look and overrides the link styling that
+   would otherwise bleed through. */
+.ial-button {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border: 0;
+  border-radius: 6px;
+  background: #2e7d47;
+  color: #fff !important;
+  font-size: 0.95em;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none !important;
+  text-shadow: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
+  transition: background-color .15s ease, box-shadow .15s ease, transform .05s ease;
+}
+.ial-button:hover,
+.ial-button:focus {
+  background: #256b3b;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+.ial-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .15);
+}
+.ial-button:focus-visible {
+  outline: 2px solid #14532d;
+  outline-offset: 2px;
+}
+.ial-button-icon {
+  font-size: 1.2em;
+  font-weight: 400;
+  line-height: 1;
+}

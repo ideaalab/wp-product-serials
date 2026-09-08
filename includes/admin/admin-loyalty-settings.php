@@ -30,7 +30,7 @@ function ial_loyalty_register_settings()
         'basis'       => __('What levels the customer up', 'ial-reg'),
         'tiers'       => __('Discount tiers', 'ial-reg'),
         'max_percent' => __('Global cap', 'ial-reg'),
-        'excluded'    => __('Excluded categories', 'ial-reg'),
+        'filter'      => __('Where it applies', 'ial-reg'),
         'display'     => __('Where it is shown', 'ial-reg'),
     );
 
@@ -161,32 +161,86 @@ function ial_loyalty_render_field_max_percent()
     <?php
 }
 
-function ial_loyalty_render_field_excluded()
+function ial_loyalty_render_field_filter()
 {
     $s = ial_loyalty_get_settings();
 
-    if (!taxonomy_exists('product_cat')) {
+    if (!class_exists('WooCommerce')) {
         echo '<p class="description">' . esc_html__('Available once WooCommerce is active.', 'ial-reg') . '</p>';
         return;
     }
-
-    $terms = get_terms(array('taxonomy' => 'product_cat', 'hide_empty' => false));
-    if (is_wp_error($terms) || empty($terms)) {
-        echo '<p class="description">' . esc_html__('No product categories found.', 'ial-reg') . '</p>';
-        return;
-    }
     ?>
-    <select name="ial_loyalty_settings[excluded_cats][]" multiple size="6" class="wc-enhanced-select regular-text"
-        data-placeholder="<?php esc_attr_e('No exclusions', 'ial-reg'); ?>">
-        <?php foreach ($terms as $term): ?>
-            <option value="<?php echo esc_attr($term->term_id); ?>"
-                <?php selected(in_array((int) $term->term_id, $s['excluded_cats'], true)); ?>>
-                <?php echo esc_html($term->name); ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
+    <fieldset class="ial-filter">
+        <p>
+            <label>
+                <input type="radio" name="ial_loyalty_settings[filter_mode]" value="exclude"
+                    <?php checked($s['filter_mode'], 'exclude'); ?>>
+                <?php esc_html_e('Everywhere except what I pick below', 'ial-reg'); ?>
+            </label><br>
+            <label>
+                <input type="radio" name="ial_loyalty_settings[filter_mode]" value="include"
+                    <?php checked($s['filter_mode'], 'include'); ?>>
+                <?php esc_html_e('Only on what I pick below', 'ial-reg'); ?>
+            </label>
+        </p>
+
+        <p>
+            <label class="ial-filter-label" for="ial_loyalty_filter_cats">
+                <?php esc_html_e('Categories', 'ial-reg'); ?>
+            </label>
+            <input type="hidden" name="ial_loyalty_settings[filter_cats][]" value="">
+            <?php
+            $terms = get_terms(array('taxonomy' => 'product_cat', 'hide_empty' => false));
+            if (is_wp_error($terms) || empty($terms)) {
+                echo '<span class="description">' . esc_html__('No product categories found.', 'ial-reg') . '</span>';
+            } else {
+                ?>
+                <select name="ial_loyalty_settings[filter_cats][]" id="ial_loyalty_filter_cats" multiple
+                    class="wc-enhanced-select" style="width:100%; max-width:520px;"
+                    data-placeholder="<?php esc_attr_e('Any category', 'ial-reg'); ?>">
+                    <?php foreach ($terms as $term): ?>
+                        <option value="<?php echo esc_attr($term->term_id); ?>"
+                            <?php selected(in_array((int) $term->term_id, $s['filter_cats'], true)); ?>>
+                            <?php echo esc_html($term->name); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <?php
+            }
+            ?>
+        </p>
+
+        <p>
+            <label class="ial-filter-label" for="ial_loyalty_filter_products">
+                <?php esc_html_e('Individual products', 'ial-reg'); ?>
+            </label>
+            <input type="hidden" name="ial_loyalty_settings[filter_products][]" value="">
+            <select name="ial_loyalty_settings[filter_products][]" id="ial_loyalty_filter_products" multiple
+                class="wc-product-search" style="width:100%; max-width:520px;"
+                data-placeholder="<?php esc_attr_e('Search for a product…', 'ial-reg'); ?>"
+                data-action="woocommerce_json_search_products_and_variations">
+                <?php
+                foreach ($s['filter_products'] as $product_id) {
+                    $product = wc_get_product($product_id);
+                    if (!$product) {
+                        continue;
+                    }
+                    printf(
+                        '<option value="%1$s" selected>%2$s</option>',
+                        esc_attr($product_id),
+                        esc_html(wp_strip_all_tags($product->get_formatted_name()))
+                    );
+                }
+                ?>
+            </select>
+        </p>
+    </fieldset>
+
     <p class="description">
-        <?php esc_html_e('Products in these categories never receive the loyalty discount. Use it for outlet, spare parts or anything with a thin margin.', 'ial-reg'); ?>
+        <?php esc_html_e('Categories include everything filed underneath them, so picking a parent covers its subcategories. Categories and products add up: a product qualifies if it matches either list.', 'ial-reg'); ?>
+    </p>
+    <p class="description">
+        <?php esc_html_e('Leave both lists empty to apply the discount to the whole catalogue. On "only on what I pick", empty lists mean nothing qualifies and no discount is ever applied.', 'ial-reg'); ?>
     </p>
     <?php
 }
@@ -226,12 +280,24 @@ function ial_loyalty_sanitize_settings($input)
             : $defaults['basis'],
         'tiers'           => ial_loyalty_normalize_tiers(isset($input['tiers']) ? $input['tiers'] : array()),
         'max_percent'     => ial_loyalty_clamp_percent(isset($input['max_percent']) ? $input['max_percent'] : $defaults['max_percent']),
-        'excluded_cats'   => isset($input['excluded_cats'])
-            ? array_values(array_unique(array_filter(array_map('intval', (array) $input['excluded_cats']))))
-            : array(),
+        'filter_mode'     => (isset($input['filter_mode']) && 'include' === $input['filter_mode'])
+            ? 'include'
+            : 'exclude',
+        'filter_cats'     => ial_loyalty_clean_id_list(isset($input['filter_cats']) ? $input['filter_cats'] : array()),
+        'filter_products' => ial_loyalty_clean_id_list(isset($input['filter_products']) ? $input['filter_products'] : array()),
         'show_notice'     => !empty($input['show_notice']) ? 1 : 0,
         'show_collection' => !empty($input['show_collection']) ? 1 : 0,
     );
+
+    if ($out['enabled'] && 'include' === $out['filter_mode']
+        && empty($out['filter_cats']) && empty($out['filter_products'])) {
+        add_settings_error(
+            'ial_loyalty_settings',
+            'ial_loyalty_empty_include',
+            __('The discount is set to apply only to selected categories or products, but nothing is selected — so no product qualifies and no discount will be applied. Pick something, or switch back to "everywhere except".', 'ial-reg'),
+            'warning'
+        );
+    }
 
     if ($out['enabled'] && empty($out['tiers'])) {
         add_settings_error(

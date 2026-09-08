@@ -59,7 +59,7 @@ function ial_my_products_endpoint_content()
     $register_button_html = '';
     if ($registration_page_url) {
         $register_button_html = sprintf(
-            '<a href="%s" class="woocommerce-Button button">%s</a>',
+            '<a href="%1$s" class="woocommerce-Button button ial-button"><span class="ial-button-icon" aria-hidden="true">+</span>%2$s</a>',
             esc_url($registration_page_url),
             esc_html__('Registrar nuevo producto', 'ial-reg')
         );

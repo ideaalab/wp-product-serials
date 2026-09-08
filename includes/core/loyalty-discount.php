@@ -34,7 +34,9 @@ function ial_loyalty_default_settings()
         'basis'           => 'distinct_products',
         'tiers'           => array(),
         'max_percent'     => 20,
-        'excluded_cats'   => array(),
+        'filter_mode'     => 'exclude',
+        'filter_cats'     => array(),
+        'filter_products' => array(),
         'show_notice'     => 1,
         // Opt-in: updating the plugin must not change what a live My Account
         // page shows until the shop decides to turn it on.
@@ -76,7 +78,21 @@ function ial_loyalty_get_settings($force_refresh = false)
         : 'distinct_products';
     $s['max_percent']     = ial_loyalty_clamp_percent($s['max_percent']);
     $s['tiers']           = ial_loyalty_normalize_tiers($s['tiers']);
-    $s['excluded_cats']   = array_values(array_filter(array_map('intval', (array) $s['excluded_cats'])));
+
+    // 3.7.x stored a single "excluded categories" list with no mode. Read it
+    // as an exclude filter so upgrading changes nothing; the next save writes
+    // the current shape.
+    if (!isset($saved['filter_mode']) && !empty($saved['excluded_cats'])) {
+        $s['filter_mode'] = 'exclude';
+        $s['filter_cats'] = (array) $saved['excluded_cats'];
+    }
+
+    $s['filter_mode']     = in_array($s['filter_mode'], array('exclude', 'include'), true)
+        ? $s['filter_mode']
+        : 'exclude';
+    $s['filter_cats']     = ial_loyalty_clean_id_list($s['filter_cats']);
+    $s['filter_products'] = ial_loyalty_clean_id_list($s['filter_products']);
+    unset($s['excluded_cats']);
 
     $cache = $s;
     return $cache;
@@ -88,6 +104,16 @@ add_action('add_option_ial_loyalty_settings', 'ial_loyalty_flush_settings_cache'
 function ial_loyalty_flush_settings_cache()
 {
     ial_loyalty_get_settings(true);
+}
+
+/** Unique, positive integer IDs from whatever the settings hold. */
+function ial_loyalty_clean_id_list($value)
+{
+    $ids = array_map('intval', (array) $value);
+    $ids = array_filter($ids, function ($id) {
+        return $id > 0;
+    });
+    return array_values(array_unique($ids));
 }
 
 function ial_loyalty_clamp_percent($value)
@@ -358,20 +384,95 @@ function ial_loyalty_baseline_price($cart_item_key, $product)
 }
 
 /** Categories (and anything hooked in) that never receive the discount. */
-function ial_loyalty_is_product_excluded($product)
+/**
+ * Selected categories plus every category underneath them.
+ *
+ * `has_term()` only matches terms assigned directly to the product, and shops
+ * normally file a product under its leaf category alone. Without walking the
+ * tree, picking a parent category in the settings would silently match nothing.
+ *
+ * @param int[] $term_ids
+ * @return int[]
+ */
+function ial_loyalty_expand_categories($term_ids)
+{
+    static $cache = array();
+
+    $term_ids = ial_loyalty_clean_id_list($term_ids);
+    if (empty($term_ids)) {
+        return array();
+    }
+
+    $key = implode(',', $term_ids);
+    if (isset($cache[$key])) {
+        return $cache[$key];
+    }
+
+    $all = $term_ids;
+    foreach ($term_ids as $term_id) {
+        $children = get_term_children($term_id, 'product_cat');
+        if (!is_wp_error($children)) {
+            $all = array_merge($all, array_map('intval', $children));
+        }
+    }
+
+    $cache[$key] = array_values(array_unique($all));
+    return $cache[$key];
+}
+
+/** Is this product named by the configured categories or products? */
+function ial_loyalty_filter_matches($product)
+{
+    $s      = ial_loyalty_get_settings();
+    $own_id = (int) $product->get_id();
+    $parent = $product->is_type('variation') ? (int) $product->get_parent_id() : 0;
+
+    // A variation can be picked directly in the product selector, so a match on
+    // either the variation or its parent counts.
+    if (!empty($s['filter_products'])) {
+        if (in_array($own_id, $s['filter_products'], true)) {
+            return true;
+        }
+        if ($parent && in_array($parent, $s['filter_products'], true)) {
+            return true;
+        }
+    }
+
+    if (!empty($s['filter_cats'])) {
+        // Categories live on the parent, never on the variation.
+        $cat_owner = $parent ? $parent : $own_id;
+        if (has_term(ial_loyalty_expand_categories($s['filter_cats']), 'product_cat', $cat_owner)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/** Does the loyalty discount apply to this product at all? */
+function ial_loyalty_product_qualifies($product)
 {
     if (!$product instanceof WC_Product) {
-        return true;
+        return false;
     }
 
-    $s          = ial_loyalty_get_settings();
-    $product_id = $product->is_type('variation') ? $product->get_parent_id() : $product->get_id();
+    $s       = ial_loyalty_get_settings();
+    $has_list = !empty($s['filter_cats']) || !empty($s['filter_products']);
 
-    if (!empty($s['excluded_cats']) && has_term($s['excluded_cats'], 'product_cat', $product_id)) {
-        return true;
+    if ('include' === $s['filter_mode']) {
+        // An empty allow-list means exactly what it says: nothing qualifies.
+        // The settings screen warns about that combination when it is saved.
+        $qualifies = $has_list && ial_loyalty_filter_matches($product);
+    } else {
+        $qualifies = !($has_list && ial_loyalty_filter_matches($product));
     }
 
-    return (bool) apply_filters('ial_loyalty_exclude_product', false, $product);
+    // Kept from 3.7.0: a veto that can only ever take the discount away.
+    if (apply_filters('ial_loyalty_exclude_product', false, $product)) {
+        $qualifies = false;
+    }
+
+    return (bool) apply_filters('ial_loyalty_product_qualifies', $qualifies, $product);
 }
 
 /**
@@ -398,7 +499,7 @@ function ial_loyalty_build_plan($cart, $percent, $use_snapshot = true)
         if (!$product instanceof WC_Product) {
             continue;
         }
-        if (ial_loyalty_is_product_excluded($product)) {
+        if (!ial_loyalty_product_qualifies($product)) {
             continue;
         }
 
@@ -783,7 +884,7 @@ function ial_loyalty_get_notice_html($product = null)
 
     if (!$product instanceof WC_Product) {
         $product = null;
-    } elseif (ial_loyalty_is_product_excluded($product)) {
+    } elseif (!ial_loyalty_product_qualifies($product)) {
         return '';
     }
 
